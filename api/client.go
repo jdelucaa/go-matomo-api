@@ -9,7 +9,6 @@ import (
 	"strings"
 
 	"github.com/google/go-querystring/query"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 type apiClient struct {
@@ -20,6 +19,10 @@ type apiClient struct {
 
 	Sites *SitesService
 }
+
+const (
+	userAgent = "go-matomo-api/api/" + LibraryVersion
+)
 
 func (c *apiClient) SetApiUrl(urlStr string) error {
 	if urlStr == "" {
@@ -44,7 +47,7 @@ func (c *apiClient) SetAuthToken(authToken string) error {
 	return nil
 }
 
-func newClient(httpClient *http.Client, d *schema.ResourceData, userAgent string) (*apiClient, error) {
+func newClient(httpClient *http.Client, apiUrl string, authToken string) (*apiClient, error) {
 	if httpClient == nil {
 		httpClient = &http.Client{
 			Transport: &http.Transport{
@@ -53,10 +56,10 @@ func newClient(httpClient *http.Client, d *schema.ResourceData, userAgent string
 		}
 	}
 	c := &apiClient{}
-	if err := c.SetApiUrl(d.Get("api_url").(string)); err != nil {
+	if err := c.SetApiUrl(apiUrl); err != nil {
 		return nil, err
 	}
-	if err := c.SetAuthToken(d.Get("auth_token").(string)); err != nil {
+	if err := c.SetAuthToken(authToken); err != nil {
 		return nil, err
 	}
 
@@ -67,7 +70,7 @@ func newClient(httpClient *http.Client, d *schema.ResourceData, userAgent string
 	return c, nil
 }
 
-func (c *apiClient) newRequest(endpoint string, method string, userAgent string, opt interface{}) (*http.Request, error) {
+func (c *apiClient) newRequest(endpoint string, method string, opt interface{}) (*http.Request, error) {
 	var u url.URL
 	if opt != nil {
 		q, err := query.Values(opt)
