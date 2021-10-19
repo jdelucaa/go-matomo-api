@@ -1,9 +1,6 @@
 package api
 
 import (
-	"bytes"
-	"encoding/json"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strings"
@@ -70,18 +67,39 @@ func newClient(httpClient *http.Client, apiUrl string, authToken string) (*apiCl
 	return c, nil
 }
 
-func (c *apiClient) newRequest(endpoint string, method string, opt interface{}) (*http.Request, error) {
+// StardardOpt represents the opt present in all queries
+type StandardReqOpt struct {
+	Module    string `url:"module"`
+	Method    string `url:"method"`
+	Format    string `url:"format"`
+	AuthToken string `url:"token_auth"`
+}
+
+func (c *apiClient) newRequest(module string, method string, opt interface{}) (*http.Request, error) {
 	var u url.URL
+	standardReqOpt := &StandardReqOpt{
+		Module:    module,
+		Method:    method,
+		Format:    "JSON",
+		AuthToken: c.authToken,
+	}
+
+	sq, err := query.Values(standardReqOpt)
+	if err != nil {
+		return nil, err
+	}
+	u.RawQuery = sq.Encode()
+
 	if opt != nil {
 		q, err := query.Values(opt)
 		if err != nil {
 			return nil, err
 		}
-		u.RawQuery = q.Encode()
+		u.RawQuery = u.RawQuery + "&" + q.Encode()
 	}
 
 	req := &http.Request{
-		Method:     method,
+		Method:     "POST",
 		URL:        &u,
 		Proto:      "HTTP/1.1",
 		ProtoMajor: 1,
@@ -90,20 +108,6 @@ func (c *apiClient) newRequest(endpoint string, method string, opt interface{}) 
 		Host:       u.Host,
 	}
 	req.Header.Set("User-Agent", userAgent)
-
-	if method == "POST" || method == "PUT" {
-		bodyBytes, err := json.Marshal(opt)
-		if err != nil {
-			return nil, err
-		}
-		bodyReader := bytes.NewReader(bodyBytes)
-
-		u.RawQuery = ""
-		req.Body = ioutil.NopCloser(bodyReader)
-		req.ContentLength = int64(bodyReader.Len())
-		req.Header.Set("Content-Type", "application/json")
-	}
-
 	req.Header.Set("Accept", "application/json")
 
 	return req, nil
