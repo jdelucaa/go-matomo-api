@@ -3,7 +3,6 @@ package api
 import (
 	"net/http"
 	"net/url"
-	"strings"
 
 	"github.com/google/go-querystring/query"
 )
@@ -25,11 +24,6 @@ func (c *apiClient) SetApiUrl(urlStr string) error {
 	if urlStr == "" {
 		return ErrApiUrlCannotBeEmpty
 	}
-	// Make sure the given URL ends with a slash
-	if !strings.HasSuffix(urlStr, "/") {
-		urlStr += "/"
-	}
-
 	var err error
 	c.apiUrl, err = url.Parse(urlStr)
 	return err
