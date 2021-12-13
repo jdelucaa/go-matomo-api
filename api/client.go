@@ -1,11 +1,8 @@
 package api
 
 import (
-	"bytes"
 	"encoding/json"
-	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 
@@ -79,7 +76,7 @@ type StandardReqOpt struct {
 }
 
 func (c *apiClient) newRequest(module string, method string, opt interface{}) (*http.Request, error) {
-	var u url.URL
+	var u = *c.apiUrl
 	standardReqOpt := &StandardReqOpt{
 		Module:    module,
 		Method:    method,
@@ -128,24 +125,6 @@ type Response struct {
 	*http.Response
 }
 
-// CheckResponse checks the API response for errors, and returns them if present.
-func checkResponse(r *http.Response) error {
-	switch r.StatusCode {
-	case 200, 201, 202, 204, 207, 304:
-		return nil
-	}
-
-	data, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		data = []byte(err.Error())
-	}
-	if data == nil {
-		data = []byte("empty")
-	}
-	r.Body = ioutil.NopCloser(bytes.NewBuffer(data)) // Preserve body
-	return fmt.Errorf("%s %s: StatusCode %d, Body: %s", r.Request.Method, r.Request.RequestURI, r.StatusCode, string(data))
-}
-
 // do sends an API request and returns the API response. The API response is
 // JSON decoded and stored in the value pointed to by v, or returned as an
 // error if an API error has occurred. If v implements the io.Writer
@@ -159,13 +138,6 @@ func (c *apiClient) do(req *http.Request, v interface{}) (*Response, error) {
 	defer resp.Body.Close()
 
 	response := newResponse(resp)
-
-	err = checkResponse(resp)
-	if err != nil {
-		// even though there was an error, we still return the response
-		// in case the caller wants to inspect it further
-		return response, err
-	}
 
 	if v != nil && response.StatusCode != http.StatusNoContent {
 		if w, ok := v.(io.Writer); ok {

@@ -7,11 +7,20 @@ import (
 
 // Site represents a Site resource
 type Site struct {
-	ID       string `json:"idSite,omitempty"`
-	Name     string `json:"siteName"`
-	Timezone string `json:"timezone"`
-	Currency string `json:"currency"`
-	Type     string `json:"type"`
+	ID    string `json:"idSite,omitempty"`
+	Name  string `json:"siteName"`
+	Value int    `json:"value,omitempty"`
+}
+
+// Site represents a Site resource
+type SiteOptions struct {
+	ID   string `url:"idSite,omitempty"`
+	Name string `url:"siteName"`
+}
+
+// Site represents a Site resource
+type GetSitesOptions struct {
+	Pattern *string `url:"pattern"`
 }
 
 type SitesService struct {
@@ -19,14 +28,16 @@ type SitesService struct {
 }
 
 const (
-	GetSiteFromID = "SitesManager.getSiteFromId"
-	AddSite       = "SitesManager.addSite"
-	DeleteSite    = "SitesManager.deleteSite"
+	GetSiteFromID        = "SitesManager.getSiteFromId"
+	AddSite              = "SitesManager.addSite"
+	UpdateSite           = "SitesManager.updateSite"
+	DeleteSite           = "SitesManager.deleteSite"
+	GetPatternMatchSites = "SitesManager.getPatternMatchSites"
 )
 
 // GetSiteByID retrieves a site by ID
 func (p *SitesService) GetSiteByID(idSite string) (*Site, *Response, error) {
-	siteOpt := &Site{
+	siteOpt := &SiteOptions{
 		ID: idSite,
 	}
 	req, err := p.client.newRequest(API, GetSiteFromID, siteOpt)
@@ -47,11 +58,8 @@ func (p *SitesService) GetSiteByID(idSite string) (*Site, *Response, error) {
 }
 
 // CreateSite creates a Site
-func (p *SitesService) CreateSite(name string) (*Site, *Response, error) {
-	site := &Site{
-		Name: name,
-	}
-	req, _ := p.client.newRequest(API, AddSite, site)
+func (p *SitesService) CreateSite(opt *SiteOptions) (*Site, *Response, error) {
+	req, _ := p.client.newRequest(API, AddSite, opt)
 
 	var createdSite Site
 
@@ -62,9 +70,25 @@ func (p *SitesService) CreateSite(name string) (*Site, *Response, error) {
 	return &createdSite, resp, err
 }
 
+// CreateSite updates a Site
+func (p *SitesService) UpdateSite(opt *SiteOptions) (*Site, *Response, error) {
+	req, _ := p.client.newRequest(API, UpdateSite, opt)
+
+	var updatedSite Site
+
+	resp, err := p.client.do(req, &updatedSite)
+	if err != nil {
+		return nil, resp, err
+	}
+	return &updatedSite, resp, err
+}
+
 // DeleteSite deletes the given Site
-func (p *SitesService) DeleteSite(site Site) (bool, *Response, error) {
-	req, err := p.client.newRequest(API, DeleteSite, site)
+func (p *SitesService) DeleteSite(idSite string) (bool, *Response, error) {
+	siteOpt := &SiteOptions{
+		ID: idSite,
+	}
+	req, err := p.client.newRequest(API, DeleteSite, siteOpt)
 	if err != nil {
 		return false, nil, err
 	}
@@ -76,4 +100,20 @@ func (p *SitesService) DeleteSite(site Site) (bool, *Response, error) {
 		return false, resp, err
 	}
 	return true, resp, nil
+}
+
+// GetSites retrieves sites by pattern
+func (p *SitesService) GetSites(opt *GetSitesOptions) (*[]Site, *Response, error) {
+	req, err := p.client.newRequest(API, GetPatternMatchSites, opt)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	var sites []Site
+
+	resp, err := p.client.do(req, &sites)
+	if err != nil {
+		return nil, resp, err
+	}
+	return &sites, resp, err
 }
