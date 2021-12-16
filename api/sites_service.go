@@ -24,7 +24,7 @@ type GetSitesOptions struct {
 }
 
 type SitesService struct {
-	client *apiClient
+	client *ApiClient
 }
 
 const (

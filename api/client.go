@@ -13,7 +13,7 @@ const (
 	API = "API"
 )
 
-type apiClient struct {
+type ApiClient struct {
 	apiUrl    *url.URL
 	authToken string
 	client    *http.Client
@@ -26,7 +26,7 @@ const (
 	userAgent = "go-matomo-api/api/" + LibraryVersion
 )
 
-func (c *apiClient) SetApiUrl(urlStr string) error {
+func (c *ApiClient) SetApiUrl(urlStr string) error {
 	if urlStr == "" {
 		return ErrApiUrlCannotBeEmpty
 	}
@@ -35,7 +35,7 @@ func (c *apiClient) SetApiUrl(urlStr string) error {
 	return err
 }
 
-func (c *apiClient) SetAuthToken(authToken string) error {
+func (c *ApiClient) SetAuthToken(authToken string) error {
 	if authToken == "" {
 		return ErrTokenAuthCannotBeEmpty
 	}
@@ -44,7 +44,7 @@ func (c *apiClient) SetAuthToken(authToken string) error {
 	return nil
 }
 
-func newClient(httpClient *http.Client, apiUrl string, authToken string) (*apiClient, error) {
+func NewClient(httpClient *http.Client, apiUrl string, authToken string) (*ApiClient, error) {
 	if httpClient == nil {
 		httpClient = &http.Client{
 			Transport: &http.Transport{
@@ -52,7 +52,7 @@ func newClient(httpClient *http.Client, apiUrl string, authToken string) (*apiCl
 			},
 		}
 	}
-	c := &apiClient{}
+	c := &ApiClient{}
 	if err := c.SetApiUrl(apiUrl); err != nil {
 		return nil, err
 	}
@@ -75,7 +75,7 @@ type StandardReqOpt struct {
 	AuthToken string `url:"token_auth"`
 }
 
-func (c *apiClient) newRequest(module string, method string, opt interface{}) (*http.Request, error) {
+func (c *ApiClient) newRequest(module string, method string, opt interface{}) (*http.Request, error) {
 	var u = *c.apiUrl
 	standardReqOpt := &StandardReqOpt{
 		Module:    module,
@@ -130,7 +130,7 @@ type Response struct {
 // error if an API error has occurred. If v implements the io.Writer
 // interface, the raw response body will be written to v, without attempting to
 // first decode it.
-func (c *apiClient) do(req *http.Request, v interface{}) (*Response, error) {
+func (c *ApiClient) do(req *http.Request, v interface{}) (*Response, error) {
 	resp, err := c.client.Do(req)
 	if err != nil {
 		return nil, err
